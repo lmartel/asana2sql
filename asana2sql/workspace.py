@@ -4,11 +4,12 @@ PROJECTS_TABLE_NAME = "projects"
 CREATE_PROJECTS_TABLE = (
         """CREATE TABLE IF NOT EXISTS "{table_name}" (
         id INTEGER NOT NULL PRIMARY KEY,
-        name VARCHAR(1024));
+        name VARCHAR(1024),
+        archived BOOLEAN NOT NULL);
         """)
 SELECT_PROJECTS = """SELECT * FROM "{table_name}";"""
 INSERT_PROJECT = (
-        """INSERT OR REPLACE INTO "{table_name}" VALUES (?, ?);""")
+        """INSERT OR REPLACE INTO "{table_name}" VALUES (?, ?, ?);""")
 
 PROJECT_MEMBERSHIPS_TABLE_NAME = "project_memberships"
 CREATE_PROJECT_MEMBERSHIPS_TABLE = (
@@ -109,7 +110,7 @@ class Workspace(object):
         self.projects = Cache(
                 self._fetch_all_fn(SELECT_PROJECTS, self.projects_table_name()),
                 self._insert_fn(INSERT_PROJECT, self.projects_table_name(),
-                    ["id", "name"]))
+                    ["id", "name", "archived"]))
         self.users = Cache(
                 self._fetch_all_fn(SELECT_USERS, self.users_table_name()),
                 self._insert_fn(INSERT_USER, self.users_table_name(),

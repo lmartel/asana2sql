@@ -49,7 +49,7 @@ class Project(object):
         if self._project_data_cache is None:
             try:
                 self._project_data_cache = (
-                    self._asana_client.projects.find_by_id(self._project_id))
+                    self._asana_client.projects.find_by_id(self._project_id, fields="id,name,archived"))
             except asana.error.NotFoundError:
                 raise NoSuchProjectException(self._project_id)
         return self._project_data_cache

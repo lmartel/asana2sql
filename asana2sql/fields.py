@@ -98,7 +98,7 @@ class ProjectsField(Field):
         self._workspace = workspace
 
     def required_fields(self):
-        return ["id", "projects.id", "projects.name"]
+        return ["id", "projects.id", "projects.name", "projects.archived"]
 
     def get_data_from_object(self, task):
         projects = {project["id"]: project for project in task.get("projects", [])}
