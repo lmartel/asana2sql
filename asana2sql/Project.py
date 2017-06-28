@@ -66,6 +66,9 @@ class Project(object):
             self._task_cache = list(
                     self._asana_client.tasks.find_by_project(
                         self._project_id, fields=",".join(self._required_fields())))
+            if len(self._task_cache) >= 50:
+                print("Warning: large unpaginated request may be truncated (fetched {} tasks).".format(len(self._task_cache)))
+
         return self._task_cache
 
     def table_name(self):

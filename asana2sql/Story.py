@@ -48,6 +48,9 @@ class Story(object):
             self._story_cache = list(
                     self._asana_client.stories.find_by_task(
                         self._task.get("id"), fields=",".join(self._required_fields())))
+            if len(self._story_cache) >= 50:
+                print("Warning: large unpaginated request may be truncated (fetched {} stories).".format(len(self._story_cache)))
+
         return self._story_cache
 
     def _required_fields(self):
@@ -55,7 +58,7 @@ class Story(object):
                                for field_names in field.required_fields())
 
     def stories_table_name(self):
-        return util.sql_safe_name(self._stories_table_name if self._stories_table_name else "stories")
+        return util.sql_safe_name(self._stories_table_name if self._stories_table_name else self._task.get("name"))
 
     def _add_field(self, field):
         if field.sql_name:
