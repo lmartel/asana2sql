@@ -94,7 +94,7 @@ class Project(object):
     def insert_or_replace(self, task):
         columns = ",".join(field.sql_name for field in self._direct_fields)
         values = ",".join("?" for field in self._direct_fields)
-        params = [field.get_data_from_task(task) for field in self._direct_fields]
+        params = [field.get_data_from_object(task) for field in self._direct_fields]
         self._db_client.write(
                 INSERT_OR_REPLACE_TEMPLATE.format(
                     table_name=self.table_name(),
@@ -103,7 +103,7 @@ class Project(object):
                 *params)
 
         for field in self._indirect_fields:
-            field.get_data_from_task(task)
+            field.get_data_from_object(task)
 
     def delete(self, task_id):
         id_field = self._id_field()

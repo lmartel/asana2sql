@@ -15,11 +15,11 @@ class SimpleFieldTestCase(unittest.TestCase):
         simple_field = SimpleField("test", SqlType.INTEGER)
         self.assertSetEqual(simple_field.required_fields(), set(["test"]))
 
-    def test_get_data_from_task(self):
+    def test_get_data_from_object(self):
         task = {"test": 123}
         simple_field = SimpleField("test", SqlType.INTEGER)
         self.assertEquals(
-                simple_field.get_data_from_task(task), 123)
+                simple_field.get_data_from_object(task), 123)
 
     def test_field_definition(self):
         simple_field = SimpleField("test", SqlType.INTEGER)
@@ -36,7 +36,7 @@ class SimpleFieldTestCase(unittest.TestCase):
     def test_default_value(self):
         task = {}
         simple_field = SimpleField("test", SqlType.INTEGER, default=123)
-        self.assertEquals(simple_field.get_data_from_task(task), 123)
+        self.assertEquals(simple_field.get_data_from_object(task), 123)
 
 
 if __name__ == '__main__':

@@ -13,9 +13,9 @@ class AssigneeFieldTestCase(unittest.TestCase):
 
         field = fields.AssigneeField(ws)
 
-        self.assertIsNone(field.get_data_from_task({}))
+        self.assertIsNone(field.get_data_from_object({}))
         self.assertEqual(
-                field.get_data_from_task({"assignee": user}),
+                field.get_data_from_object({"assignee": user}),
                 123)
 
         ws.add_user.assert_called_once_with(user)
@@ -25,9 +25,9 @@ class ParentIdFieldTestCase(unittest.TestCase):
     def test_parent_id_field(self):
         field = fields.ParentIdField()
 
-        self.assertIsNone(field.get_data_from_task({}))
+        self.assertIsNone(field.get_data_from_object({}))
         self.assertEqual(
-                field.get_data_from_task({"parent": {"id": 123, "name": "task"}}),
+                field.get_data_from_object({"parent": {"id": 123, "name": "task"}}),
                 123)
 
 
@@ -38,7 +38,7 @@ class ProjectsFieldTestCase(unittest.TestCase):
 
         field = fields.ProjectsField(ws)
 
-        self.assertIsNone(field.get_data_from_task({"id": 123}))
+        self.assertIsNone(field.get_data_from_object({"id": 123}))
 
         ws.task_memberships.assert_called_once_with(123)
 
@@ -48,7 +48,7 @@ class ProjectsFieldTestCase(unittest.TestCase):
 
         field = fields.ProjectsField(ws)
 
-        self.assertIsNone(field.get_data_from_task({
+        self.assertIsNone(field.get_data_from_object({
             "id": 123,
             "projects": [
                 {"id": 1, "name": "Project 1"},
@@ -66,7 +66,7 @@ class ProjectsFieldTestCase(unittest.TestCase):
 
         field = fields.ProjectsField(ws)
 
-        self.assertIsNone(field.get_data_from_task({
+        self.assertIsNone(field.get_data_from_object({
             "id": 123,
             "projects": [
                 {"id": 2, "name": "Project 2"},
@@ -98,7 +98,7 @@ class CustomFieldsFieldTestCase(unittest.TestCase):
 
         field = fields.CustomFields(ws)
 
-        self.assertIsNone(field.get_data_from_task({"id": 123}))
+        self.assertIsNone(field.get_data_from_object({"id": 123}))
 
         ws.add_custom_field_value.assert_not_called()
         ws.remove_custom_field_value.assert_not_called()
@@ -112,7 +112,7 @@ class CustomFieldsFieldTestCase(unittest.TestCase):
 
         field = fields.CustomFields(ws)
 
-        self.assertIsNone(field.get_data_from_task({
+        self.assertIsNone(field.get_data_from_object({
             "id": 123,
             "custom_fields": [
                 {"id": 1, "type": "text", "text_value": "foo"},
@@ -133,7 +133,7 @@ class CustomFieldsFieldTestCase(unittest.TestCase):
 
         field = fields.CustomFields(ws)
 
-        self.assertIsNone(field.get_data_from_task({
+        self.assertIsNone(field.get_data_from_object({
             "id": 123,
             "custom_fields": [
                 {"id": 2, "type": "number", "number_value": 43},
@@ -159,7 +159,7 @@ class FollowerFieldTestCase(unittest.TestCase):
 
         field = fields.FollowersField(ws)
 
-        self.assertIsNone(field.get_data_from_task({"id": 123}))
+        self.assertIsNone(field.get_data_from_object({"id": 123}))
 
         ws.add_follower.assert_not_called()
         ws.remove_follower.assert_not_called()
@@ -170,7 +170,7 @@ class FollowerFieldTestCase(unittest.TestCase):
 
         field = fields.FollowersField(ws)
 
-        self.assertIsNone(field.get_data_from_task({
+        self.assertIsNone(field.get_data_from_object({
             "id": 123,
             "followers": [
                 { "id": 1, "name": "foo" },
@@ -188,7 +188,7 @@ class FollowerFieldTestCase(unittest.TestCase):
 
         field = fields.FollowersField(ws)
 
-        self.assertIsNone(field.get_data_from_task({
+        self.assertIsNone(field.get_data_from_object({
             "id": 123,
             "followers": [
                 { "id": 2, "name": "foo" },

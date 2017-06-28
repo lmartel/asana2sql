@@ -77,7 +77,7 @@ class Story(object):
     def insert_or_replace(self, story):
         columns = ",".join(field.sql_name for field in self._direct_fields)
         values = ",".join("?" for field in self._direct_fields)
-        params = [field.get_data_from_task(story) for field in self._direct_fields]
+        params = [field.get_data_from_object(story) for field in self._direct_fields]
         self._db_client.write(
                 INSERT_OR_REPLACE_TEMPLATE.format(
                     stories_table_name=self.stories_table_name(),
@@ -86,7 +86,7 @@ class Story(object):
                 *params)
 
         for field in self._indirect_fields:
-            field.get_data_from_task(story)
+            field.get_data_from_object(story)
 
     def delete(self, task_id):
         id_field = self._id_field()

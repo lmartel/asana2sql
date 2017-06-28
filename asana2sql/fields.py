@@ -65,7 +65,7 @@ class AssigneeField(Field):
     def required_fields(self):
         return ["assignee.id", "assignee.name"]
 
-    def get_data_from_task(self, task):
+    def get_data_from_object(self, task):
         assignee = task.get("assignee")
         if assignee:
             self._workspace.add_user(assignee)
@@ -85,7 +85,7 @@ class ParentIdField(Field):
     def required_fields(self):
         return ["parent"]
 
-    def get_data_from_task(self, task):
+    def get_data_from_object(self, task):
         parent = task.get("parent")
         if parent:
             return parent.get("id", -1)
@@ -100,7 +100,7 @@ class ProjectsField(Field):
     def required_fields(self):
         return ["id", "projects.id", "projects.name"]
 
-    def get_data_from_task(self, task):
+    def get_data_from_object(self, task):
         projects = {project["id"]: project for project in task.get("projects", [])}
 
         new_project_ids = set(projects.keys())
@@ -125,7 +125,7 @@ class CustomFields(Field):
         # just have to request it all.
         return ["id", "custom_fields"]
 
-    def get_data_from_task(self, task):
+    def get_data_from_object(self, task):
         custom_fields = {field["id"]: field
                 for field in task.get("custom_fields", [])}
         old_fields = {row.custom_field_id: row
@@ -160,7 +160,7 @@ class FollowersField(Field):
     def required_fields(self):
         return ["id", "followers.id", "followers.name"]
 
-    def get_data_from_task(self, task):
+    def get_data_from_object(self, task):
         follower_ids = {follower["id"]: follower for follower in task.get("followers", [])}
         old_follower_ids = self._workspace.get_followers(task["id"])
 
@@ -180,8 +180,7 @@ class CreatedByIdField(Field):
     def required_fields(self):
         return ["created_by"]
 
-    # TODO: get_data_from_object
-    def get_data_from_task(self, task):
+    def get_data_from_object(self, task):
         parent = task.get("created_by")
         if parent:
             return parent.get("id", -1)
@@ -195,8 +194,7 @@ class TargetIdField(Field):
     def required_fields(self):
         return ["target"]
 
-    # TODO: get_data_from_object
-    def get_data_from_task(self, task):
+    def get_data_from_object(self, task):
         parent = task.get("target")
         if parent:
             return parent.get("id", -1)

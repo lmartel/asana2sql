@@ -21,7 +21,7 @@ class Field(object):
     def required_fields(self):
         return set()
 
-    def get_data_from_task(self, task):
+    def get_data_from_object(self, task):
         """Get field data from the task object."""
         raise MethodNotImplementedError()
 
@@ -43,7 +43,7 @@ class SimpleField(Field):
     def required_fields(self):
         return set([self.name])
 
-    def get_data_from_task(self, task):
+    def get_data_from_object(self, task):
         data = task.get(self.name)
 
         if data is None:
