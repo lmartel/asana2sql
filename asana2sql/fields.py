@@ -5,6 +5,10 @@ def TaskIdPrimaryKeyField():
     return SimpleField("id", SqlType.INTEGER, primary_key=True)
 
 
+def StoryIdPrimaryKeyField():
+    return SimpleField("id", SqlType.INTEGER, primary_key=True)
+
+
 def NameField():
     return SimpleField("name", SqlType.STRING)
 
@@ -39,6 +43,18 @@ def DueAtField():
 
 def NumHearts():
     return SimpleField("num_hearts", SqlType.INTEGER, default=0)
+
+
+def TextField():
+    return SimpleField("text", SqlType.TEXT)
+
+
+def HtmlTextField():
+    return SimpleField("html_text", SqlType.TEXT)
+
+
+def TypeField():
+    return SimpleField("type", SqlType.STRING)
 
 
 class AssigneeField(Field):
@@ -157,6 +173,36 @@ class FollowersField(Field):
         for follower_id in old_follower_ids:
             self._workspace.remove_follower(task["id"], follower_id)
 
+class CreatedByIdField(Field):
+    def __init__(self):
+        super(CreatedByIdField, self).__init__("created_by_id", SqlType.INTEGER)
+
+    def required_fields(self):
+        return ["created_by"]
+
+    # TODO: get_data_from_object
+    def get_data_from_task(self, task):
+        parent = task.get("created_by")
+        if parent:
+            return parent.get("id", -1)
+        else:
+            return None
+
+class TargetIdField(Field):
+    def __init__(self):
+        super(TargetIdField, self).__init__("target_id", SqlType.INTEGER)
+
+    def required_fields(self):
+        return ["target"]
+
+    # TODO: get_data_from_object
+    def get_data_from_task(self, task):
+        parent = task.get("target")
+        if parent:
+            return parent.get("id", -1)
+        else:
+            return None
+
 
 def default_fields(workspace):
     return [TaskIdPrimaryKeyField(),
@@ -177,3 +223,13 @@ def default_fields(workspace):
             CustomFields(workspace),
             ]
 
+def default_story_fields(task):
+    return [StoryIdPrimaryKeyField(),
+            CreatedAtField(),
+            CreatedByIdField(),
+            NumHearts(),
+            TextField(),
+            HtmlTextField(),
+            TargetIdField(),
+            TypeField(),
+            ]

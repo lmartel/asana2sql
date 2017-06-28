@@ -4,8 +4,9 @@ import argparse
 import pyodbc
 import requests
 
-from asana2sql.fields import default_fields
+from asana2sql.fields import default_fields, default_story_fields
 from asana2sql.Project import Project
+from asana2sql.Story import Story
 from asana2sql.workspace import Workspace
 from asana2sql.db_wrapper import DatabaseWrapper
 from asana import Client, session
@@ -31,6 +32,12 @@ def arg_parser():
             default=False,
             help="Print performance information on completion.")
 
+    parser.add_argument(
+        '--with_stories',
+        action="store_true",
+        default=False,
+        help="Fetch and store task stories (comments and edit history) as well as task and project details.")
+
     parser.add_argument("--projects_table_name")
     parser.add_argument("--project_memberships_table_name")
     parser.add_argument("--users_table_name")
@@ -38,6 +45,7 @@ def arg_parser():
     parser.add_argument("--custom_fields_table_name")
     parser.add_argument("--custom_field_enum_values_table_name")
     parser.add_argument("--custom_field_values_table_name")
+    parser.add_argument("--stories_table_name")
 
     # Asana Client options
     asana_args = parser.add_argument_group('Asana Client Options')
@@ -158,6 +166,18 @@ def main():
         project.export()
     elif args.command == 'synchronize':
         project.synchronize()
+
+    if args.with_stories:
+        if args.command == 'create':
+            Story(client, db_wrapper, None, args, default_story_fields(None)).create_table()
+        else:
+            stories = [Story(client, db_wrapper, task, args, default_story_fields(task)) for task in project.tasks()]
+            if args.command == 'export':
+                for story in stories:
+                    story.export()
+            elif args.command == 'synchronize':
+                for story in stories:
+                    story.synchronize()
 
     if not args.dry:
         db_client.commit()

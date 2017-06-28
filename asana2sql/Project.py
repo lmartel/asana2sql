@@ -58,6 +58,9 @@ class Project(object):
         return set(field_names for field in self._direct_fields + self._indirect_fields
                                for field_names in field.required_fields())
 
+    def tasks(self):
+        return self._tasks()
+
     def _tasks(self):
         if self._task_cache is None:
             self._task_cache = list(
