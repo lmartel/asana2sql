@@ -93,6 +93,9 @@ INSERT_CUSTOM_FIELD_VALUE = (
 DELETE_CUSTOM_FIELD_VALUE = (
         "DELETE FROM {table_name} WHERE task_id = ? AND custom_field_id = ?;")
 
+SELECT_TEMPLATE = (
+        """SELECT {columns} FROM "{table_name}";""")
+
 class Workspace(object):
     """Abstraction around all the supporting values for a project that are
     global to the workspace, such as users and custom fields."""
@@ -179,6 +182,13 @@ class Workspace(object):
 
     def add_project(self, project):
         self.projects.add(project)
+
+    def get_projects(self):
+        field_names = ["id", "name", "archived"]
+        return [dict(zip(field_names, row)) for row in self._db_client.read(
+                    SELECT_TEMPLATE.format(
+                    table_name=PROJECTS_TABLE_NAME,
+                    columns=",".join(field_names)))]
 
     # Followers
     def get_followers(self, task_id):

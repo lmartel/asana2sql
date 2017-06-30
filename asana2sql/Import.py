@@ -22,9 +22,10 @@ DELETE_TEMPLATE = (
         """DELETE FROM "{table_name}" WHERE {id_column} = ?;""")
 
 class ImportSomething(object):
-    def __init__(self, thing_name, asana_client_getter, db_client, config):
+    def __init__(self, thing_name, asana_client_get, asana_client_create, db_client, config):
         self._thing_name = thing_name
-        self._asana_client_getter = asana_client_getter
+        self._asana_client_get = asana_client_get
+        self._asana_client_create = asana_client_create
         self._db_client = db_client
         self._config = config
         self._workspace_id = self._config.workspace_id
@@ -61,7 +62,7 @@ class ImportSomething(object):
             table_name=self.table_name(),
             columns=self._new_id_field.sql_name,
             where="{} = {}".format(self._id_field.sql_name, id))
-        results = set(row[0] for row in self._db_client.read(sql))
+        results = [row[0] for row in self._db_client.read(sql)]
         assert len(results) < 2, "Found more than one mapping for primary key {}".format(id)
         if results:
             return results[0]
@@ -69,20 +70,50 @@ class ImportSomething(object):
             return None
             
     def _validate_new_id(self, new_id):
-        return self._asana_client_getter(new_id) is not None # will throw if not found
+        return self._asana_client_get(new_id) is not None # will throw if not found
+
+    def _import_once(self, location_id, data):
+        id = data["id"]
+        if self.get_mapping(id):
+            return
+        
+        result = self._asana_client_create(location_id, data)
+        new_id = result.get("id")
+        self.map(id, new_id)
+        return new_id
 
 class ImportUsers(ImportSomething):
     def __init__(self, asana_client, db_client, config):
-        super(ImportUsers, self).__init__("users", asana_client.users.find_by_id, db_client, config)
+        super(ImportUsers, self).__init__("users",
+                                          asana_client.users.find_by_id,
+                                          None,
+                                          db_client, config)
+        self._me = asana_client.users.me()
+
+    def import_once(self):
+        me_id = self._me.get("id")
+        self.map(me_id, me_id)
 
 class ImportProjects(ImportSomething):
     def __init__(self, asana_client, db_client, config):
-        super(ImportProjects, self).__init__("projects", asana_client.projects.find_by_id, db_client, config)
+        super(ImportProjects, self).__init__("projects",
+                                             asana_client.projects.find_by_id,
+                                             asana_client.projects.create_in_workspace,
+                                             db_client, config)
+
+    def import_once(self, project):
+        self._import_once(self._workspace_id, project)
 
 class ImportTasks(ImportSomething):
     def __init__(self, asana_client, db_client, config):
-        super(ImportTasks, self).__init__("tasks", asana_client.tasks.find_by_id, db_client, config)
+        super(ImportTasks, self).__init__("tasks",
+                                          asana_client.tasks.find_by_id,
+                                          asana_client.tasks.create_in_workspace,
+                                          db_client, config)
 
 class ImportStories(ImportSomething):
     def __init__(self, asana_client, db_client, config):
-        super(ImportStories, self).__init__("stories", asana_client.stories.find_by_id, db_client, config)
+        super(ImportStories, self).__init__("stories",
+                                            asana_client.stories.find_by_id,
+                                            asana_client.stories.create_on_task, # TODO set task creation id
+                                            db_client, config)

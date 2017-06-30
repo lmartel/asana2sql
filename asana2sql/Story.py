@@ -124,3 +124,10 @@ class Story(object):
                     stories_table_name=self.stories_table_name(),
                     columns=id_field.sql_name)))
 
+    def db_select_all(self):
+        field_names = [field.sql_name for field in self._direct_fields]
+        
+        return [dict(zip(field_names, row)) for row in self._db_client.read(
+                    SELECT_TEMPLATE.format(
+                    table_name=self.table_name(),
+                    columns=",".join(field_names)))]

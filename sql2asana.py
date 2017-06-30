@@ -136,7 +136,7 @@ def arg_parser():
         default=False,
         help="Import all projects in database to new workspace.")
     import_scope.add_argument(
-        '--import_project_id',
+        '--project_id',
         type=int,
         help="Import one project by id to new workspace.")
 
@@ -188,25 +188,41 @@ def main():
 
     workspace = Workspace(client, db_wrapper, args)
     asana_workspace = client.workspaces.find_by_id(args.workspace_id)
+    tasks_singleton = Project(client, db_wrapper, workspace, args, default_fields(workspace))
+    stories_singleton = Story(client, db_wrapper, None, args, default_story_fields(None))
+
+    import_users = ImportUsers(client, db_wrapper, args)
+    import_projects = ImportProjects(client, db_wrapper, args)
+    import_tasks = ImportTasks(client, db_wrapper, args)
+    import_stories = ImportStories(client, db_wrapper, args)
 
     if args.command == 'create':
-        ImportUsers(client, db_wrapper, args).create_table()
-        ImportProjects(client, db_wrapper, args).create_table()
-        ImportTasks(client, db_wrapper, args).create_table()
-        ImportStories(client, db_wrapper, args).create_table()
+        import_users.create_table()
+        import_projects.create_table()
+        import_tasks.create_table()
+        import_stories.create_table()
     elif args.command == 'map':
         if args.type == 'user':
-            ImportUsers(client, db_wrapper, args).map(args.from_id, args.to_id)
+            import_users.map(args.from_id, args.to_id)
         elif args.type == 'project':
-            ImportProjects(client, db_wrapper, args).map(args.from_id, args.to_id)
+            import_projects.map(args.from_id, args.to_id)
         elif args.type == 'task':
-            ImportTasks(client, db_wrapper, args).map(args.from_id, args.to_id)
+            import_tasks.map(args.from_id, args.to_id)
         elif args.type == 'story':
-            ImportStories(client, db_wrapper, args).map(args.from_id, args.to_id)
+            import_stories.map(args.from_id, args.to_id)
         else:
             raise parser.error("import --type: unsupported type {}".format(args.type))
     elif args.command == 'import':
-        pass
+        import_users.import_once()
+        if args.import_all:
+            projects = workspace.get_projects()
+        elif args.project_id:
+            sys.exit(1) # TODO
+
+        for project in projects:
+            import_projects.import_once(project)
+            if not args.dry:
+                db_client.commit()
     
     if not args.dry:
         db_client.commit()
