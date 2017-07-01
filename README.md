@@ -1,3 +1,73 @@
+# asana2sql2asana
+
+This fork adds some more functionality to the asana2sql library's exports:
+- subtasks
+- stories (edit history and comments)
+
+It also adds a workspace option to the `asana2sql.py` script to export all
+projects in a workspace at once.
+
+Finally, it adds a `sql2asana.py` script to import everything (or one project
+at a time) into a new workspace. Specifically, it can import:
+- Projects (name, is_archived)
+- Tasks and subtasks (name, notes, due time/due date, hearted, assignee)
+- Project memberships, **including multihomed tasks**
+- Task comments (text)
+
+Notably **not** supported by import:
+- Custom fields
+- Anything asana2sql still can't export, like conversations
+- Anything you can't change manually, like authorship and edit history
+
+Imports are fully restartable and nothing will be imported twice. The script
+uses database tables to track import progress.
+
+Usage:
+```
+### export EVERYTHING from workspace 12345
+### This can be SLOW, my workspace of 5000 tasks in 100 projects took around 4 hours.
+
+# first prepare to export by creating database tables
+python3 asana2sql.py --access_token $ACCESS_TOKEN \                                   # see original README below
+--odbc_string "DRIVER={SQLite3};DATABASE=$ABSOLUTE_PATH_TO_ASANA2SQL_DB;BigInt=yes" \ # see original README below
+--table_name tasks \                                                                  # to export workspace, use one table for all tasks
+--with_subtasks --with_stories --stories_table_name stories \                         # include subtasks and storise
+--dump_perf --dump_api \                                                              # print progress as we go
+--workspace_id 12345 create
+
+# then run the export
+python3 asana2sql.py --access_token $ACCESS_TOKEN \                                   # see original README below
+--odbc_string "DRIVER={SQLite3};DATABASE=$ABSOLUTE_PATH_TO_ASANA2SQL_DB;BigInt=yes" \ # see original README below
+--table_name tasks \                                                                  # to export workspace, use one table for all tasks
+--with_subtasks --with_stories --stories_table_name stories \                         # include subtasks and storise
+--dump_perf --dump_api \                                                              # print progress as we go
+--workspace_id 12345 export
+
+
+### import everything into workspace 56789
+### This is also SLOW, but faster than exporting, since we drop some details like edit history.
+
+# first prepare to import by creating database tables
+python3 sql2asana.py --access_token $ACCESS_TOKEN \                                   # see original README below
+--odbc_string "DRIVER={SQLite3};DATABASE=$ABSOLUTE_PATH_TO_ASANA2SQL_DB;BigInt=yes" \ # see original README below
+--table_name tasks \                                                                  # to export workspace, use one table for all tasks
+--with_subtasks --with_stories --stories_table_name stories \                         # include subtasks and storise
+--dump_perf --dump_api \                                                              # print progress as we go
+--workspace_id 56789 create
+
+# then run the import
+python3 sql2asana.py --access_token $ACCESS_TOKEN \                                   # see original README below
+--odbc_string "DRIVER={SQLite3};DATABASE=$ABSOLUTE_PATH_TO_ASANA2SQL_DB;BigInt=yes" \ # see original README below
+--table_name tasks \                                                                  # to export workspace, use one table for all tasks
+--with_subtasks --with_stories --stories_table_name stories \                         # include subtasks and storise
+--dump_perf --dump_api \                                                              # print progress as we go
+--workspace_id 56789 import --import_all
+
+# note: to just import project 654, delete --import_all and
+# instead use --project_id 654
+```
+
+# Original README:
 # asana2sql
 
 asana2sql is a utility for exporting Asana data to SQL databases.  It assumes a
