@@ -38,7 +38,7 @@ class SimpleField(Field):
         self.name = name
         self.sql_type = type
         self._default = default
-        self._primary_key = primary_key
+        self.primary_key = primary_key
 
     def required_fields(self):
         return set([self.name])
@@ -55,7 +55,7 @@ class SimpleField(Field):
             return data
 
     def field_definition_sql(self):
-        if (self._primary_key):
+        if (self.primary_key):
             return PRIMARY_KEY_DEFINITION_TEMPLATE.format(
                     name=self.sql_name,
                     type=self.sql_type)

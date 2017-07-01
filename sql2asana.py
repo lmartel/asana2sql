@@ -1,13 +1,12 @@
 #!/usr/bin/env python
 
 import argparse
-import copy
 import pyodbc
 import requests
 import sys
 
 from asana2sql.fields import default_fields, default_story_fields
-from asana2sql.Import import ImportUsers, ImportProjects, ImportTasks, ImportStories
+from asana2sql.Import import ImportUsers, ImportProjects, ImportTasks, ImportTaskParents, ImportProjectMemberships, ImportStories
 from asana2sql.Project import Project
 from asana2sql.Story import Story
 from asana2sql.workspace import Workspace
@@ -193,16 +192,25 @@ def main():
 
     import_users = ImportUsers(client, db_wrapper, args)
     import_projects = ImportProjects(client, db_wrapper, args)
-    import_tasks = ImportTasks(client, db_wrapper, args)
-    import_stories = ImportStories(client, db_wrapper, args)
+    import_tasks = ImportTasks(client, db_wrapper, args, import_users)
+    import_task_parents = ImportTaskParents(client, db_wrapper, args, import_tasks)
+    import_project_memberships = ImportProjectMemberships(client, db_wrapper, args, import_projects, import_tasks)
+    import_stories = ImportStories(client, db_wrapper, args, import_tasks)
+
+    def commit():
+        if not args.dry:
+            db_client.commit()
 
     if args.command == 'create':
         import_users.create_table()
         import_projects.create_table()
         import_tasks.create_table()
+        import_task_parents.create_table()
+        import_project_memberships.create_table()
         import_stories.create_table()
     elif args.command == 'map':
         if args.type == 'user':
+            assert args.from_id == args.to_id, "map: user ids are global, so from_id and to_id should be the same"
             import_users.map(args.from_id, args.to_id)
         elif args.type == 'project':
             import_projects.map(args.from_id, args.to_id)
@@ -211,21 +219,48 @@ def main():
         elif args.type == 'story':
             import_stories.map(args.from_id, args.to_id)
         else:
-            raise parser.error("import --type: unsupported type {}".format(args.type))
+            # idempotent things like task parent / project membership cannot be manually mapped
+            raise parser.error("map --type: unsupported type {}".format(args.type))
     elif args.command == 'import':
         import_users.import_once()
         if args.import_all:
             projects = workspace.get_projects()
+            tasks = tasks_singleton.db_select_all()
         elif args.project_id:
-            sys.exit(1) # TODO
+            projects = [workspace.get_project(args.project_id)]
+            tasks = tasks_singleton.db_select_all_in_project(args.project_id)
 
         for project in projects:
             import_projects.import_once(project)
-            if not args.dry:
-                db_client.commit()
+            commit()
+        
+        for task in tasks:
+            task_id = task["id"]
+            import_tasks.import_once(task)
+            commit()
+            
+            memberships = workspace.task_memberships(task_id)
+            import_project_memberships.import_once(task, memberships)
+            commit()
+
+            stories = stories_singleton.db_select_where("target_id = {}".format(task_id))
+            for story in stories:
+                import_stories.import_once(task, story)
+                commit()
+
+        for task in tasks:
+            import_task_parents.import_once(task)
+            commit()
+           
+            
+        
+
+            # import tasks in project
+            # add project to task if already imported
+            # import each task's subtasks
+            # TODO ^^
     
-    if not args.dry:
-        db_client.commit()
+    commit()
 
     if args.dump_perf:
         print("Finished `{}' for workspace {} ({})".format(args.command, asana_workspace.get("name"), asana_workspace.get("id")))

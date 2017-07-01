@@ -14,6 +14,12 @@ INSERT_OR_REPLACE_TEMPLATE = (
 SELECT_TEMPLATE = (
         """SELECT {columns} FROM "{table_name}";""")
 
+SELECT_WHERE_TEMPLATE = (
+        """SELECT {columns} FROM "{table_name}" WHERE {where};""")
+
+SELECT_JOIN_WHERE_TEMPLATE = (
+        """SELECT {columns} FROM "{table_name}" JOIN "{join_table_name}" ON {join} WHERE {where};""")
+
 DELETE_TEMPLATE = (
         """DELETE FROM "{table_name}" WHERE {id_column} = ?;""")
 
@@ -35,7 +41,7 @@ class Project(object):
         self._direct_fields = []
         self._indirect_fields = []
 
-        self._project_id = self._config.project_id
+        self._project_id = vars(self._config).get("project_id", None)
         self._table_name = self._config.table_name
 
         self._project_data_cache = None
@@ -63,11 +69,20 @@ class Project(object):
 
     def _tasks(self):
         if self._task_cache is None:
-            self._task_cache = list(
-                    self._asana_client.tasks.find_by_project(
-                        self._project_id, fields=",".join(self._required_fields())))
-            if len(self._task_cache) >= 50:
-                print("Warning: large unpaginated request may be truncated (fetched {} tasks).".format(len(self._task_cache)))
+            result = list(
+                self._asana_client.tasks.find_by_project(
+                    self._project_id, fields=",".join(self._required_fields())))
+            if len(result) >= 50:
+                print("Warning: large unpaginated request may be truncated (fetched {} tasks).".format(len(result)))
+
+            if self._config.with_subtasks:
+                subtask_lists = [
+                    self._asana_client.tasks.subtasks(
+                        task.get("id"), fields=",".join(self._required_fields()))
+                    for task in result]
+                result.extend(itertools.chain.from_iterable(subtask_lists))
+
+            self._task_cache = result
 
         return self._task_cache
 
@@ -143,9 +158,26 @@ class Project(object):
 
     def db_select_all(self):
         field_names = [field.sql_name for field in self._direct_fields]
-        
+
         return [dict(zip(field_names, row)) for row in self._db_client.read(
                     SELECT_TEMPLATE.format(
                     table_name=self.table_name(),
                     columns=",".join(field_names)))]
+    
+    def db_select_all_in_project(self, project_id):
+        field_names = [field.sql_name for field in self._direct_fields]
+        qualified_field_names = ["{}.{}".format(self.table_name(), field_name)
+                                 for field_name in field_names]
+        project_table = self.table_name()
+        memberships_table = self._workspace.project_memberships_table_name()
+        
+        return [dict(zip(field_names, row)) for row in self._db_client.read(
+                    SELECT_JOIN_WHERE_TEMPLATE.format(
+                    table_name=project_table,
+                    join_table_name=memberships_table,
+                    join="{}.id = {}.task_id".format(project_table, memberships_table),
+                    where=""" {}.project_id = "{}" """.format(memberships_table, project_id),
+                    columns=",".join(qualified_field_names)))]
 
+
+        

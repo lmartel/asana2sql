@@ -14,6 +14,9 @@ INSERT_OR_REPLACE_TEMPLATE = (
 SELECT_TEMPLATE = (
         """SELECT {columns} FROM "{stories_table_name}";""")
 
+SELECT_WHERE_TEMPLATE = (
+        """SELECT {columns} FROM "{stories_table_name}" WHERE {where};""")
+
 DELETE_TEMPLATE = (
         """DELETE FROM "{stories_table_name}" WHERE {id_column} = ?;""")
 
@@ -129,5 +132,14 @@ class Story(object):
         
         return [dict(zip(field_names, row)) for row in self._db_client.read(
                     SELECT_TEMPLATE.format(
-                    table_name=self.table_name(),
+                    stories_table_name=self.stories_table_name(),
                     columns=",".join(field_names)))]
+
+    def db_select_where(self, where):
+        field_names = [field.sql_name for field in self._direct_fields]
+        
+        return [dict(zip(field_names, row)) for row in self._db_client.read(
+                    SELECT_WHERE_TEMPLATE.format(
+                    stories_table_name=self.stories_table_name(),
+                    columns=",".join(field_names),
+                    where=where))]

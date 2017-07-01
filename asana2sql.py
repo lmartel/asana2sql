@@ -39,6 +39,12 @@ def arg_parser():
             help="Print performance information on completion.")
 
     parser.add_argument(
+        '--with_subtasks',
+        action="store_true",
+        default=False,
+        help="Fetch and store one level of subtasks as well as top level tasks.")
+    
+    parser.add_argument(
         '--with_stories',
         action="store_true",
         default=False,

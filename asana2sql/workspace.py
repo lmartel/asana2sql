@@ -95,6 +95,8 @@ DELETE_CUSTOM_FIELD_VALUE = (
 
 SELECT_TEMPLATE = (
         """SELECT {columns} FROM "{table_name}";""")
+SELECT_WHERE_TEMPLATE = (
+        """SELECT {columns} FROM "{table_name}" WHERE {where};""")
 
 class Workspace(object):
     """Abstraction around all the supporting values for a project that are
@@ -183,13 +185,20 @@ class Workspace(object):
     def add_project(self, project):
         self.projects.add(project)
 
+    def get_project(self, id):
+        field_names = ["id", "name", "archived"]
+        return [dict(zip(field_names, row)) for row in self._db_client.read(
+                    SELECT_WHERE_TEMPLATE.format(
+                    table_name=PROJECTS_TABLE_NAME,
+                    columns=",".join(field_names),
+                    where=""" id = "{}" """.format(id)))][0]
+
     def get_projects(self):
         field_names = ["id", "name", "archived"]
         return [dict(zip(field_names, row)) for row in self._db_client.read(
                     SELECT_TEMPLATE.format(
                     table_name=PROJECTS_TABLE_NAME,
                     columns=",".join(field_names)))]
-
     # Followers
     def get_followers(self, task_id):
         return {row[0] for row in self._db_client.read(
