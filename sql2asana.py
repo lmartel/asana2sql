@@ -238,7 +238,9 @@ def main():
             task_id = task["id"]
             import_tasks.import_once(task)
             commit()
-            
+
+            # tasks are added to the end of each project by default,
+            # so we add them in order we exported them.
             memberships = workspace.task_memberships(task_id)
             import_project_memberships.import_once(task, memberships)
             commit()
@@ -248,18 +250,12 @@ def main():
                 import_stories.import_once(task, story)
                 commit()
 
-        for task in tasks:
+        # subtasks are added to the TOP of the subtask list by default,
+        # so we need to add them in reverse order.
+        for task in reversed(tasks):
             import_task_parents.import_once(task)
             commit()
            
-            
-        
-
-            # import tasks in project
-            # add project to task if already imported
-            # import each task's subtasks
-            # TODO ^^
-    
     commit()
 
     if args.dump_perf:
